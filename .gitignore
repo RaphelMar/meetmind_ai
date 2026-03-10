@@ -1,0 +1,48 @@
+# ========================
+# Python
+# ========================
+# Arquivos compilados e de cache (evita subir os __pycache__)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ========================
+# Ambientes Virtuais
+# ========================
+# Ignora pastas de ambientes isolados (venv, conda, etc)
+.env
+.venv
+env/
+venv/
+ENV/
+
+# ========================
+# Sistema Operacional (macOS)
+# ========================
+# Arquivos de metadados ocultos do Mac
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ========================
+# IDEs e Editores de Código
+# ========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ========================
+# Específicos do Projeto meetmind_ai
+# ========================
+# Ignora a pasta de arquivos temporários que seu código gera
+temp/
+file_tests/
+
+# Opcional: Ignorar arquivos de áudio/vídeo pesados para não sobrecarregar o GitHub
+# Se você quiser subir os áudios de teste, comente as linhas abaixo usando '#'
+*.ogg
+*.wav
+*.mp3
+*.m4a
+*.mp4
