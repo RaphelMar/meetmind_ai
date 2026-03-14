@@ -4,6 +4,8 @@ from langchain_ollama import ChatOllama
 from moviepy import AudioFileClip, VideoFileClip
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from tqdm import tqdm
+
 
 from src.prompts import SystemPrompt
 
@@ -20,10 +22,25 @@ class TranscriberAi():
 
     def _get_transcript(self, audio_path: str) -> str:
         # The large-v3-turbo model is best for long and technical meetings.
+        print("teste")
         model = WhisperModel(model_size_or_path= "large-v3-turbo", device= "cpu", compute_type= "int8")
-        segments, _ = model.transcribe(audio_path, beam_size= 8, language= "pt")
 
-        return " ".join([s.text for s in segments])
+        segments, info = model.transcribe(audio_path, beam_size= 8, language= "pt")
+
+        print(segments)
+
+        transcribed_texts = []
+
+        # Creates a progress bar based on the audio duration in seconds.
+        with tqdm(total=round(info.duration, 2), unit=" seg", desc="Transcrevendo áudio") as pbar:
+            for segment in segments:
+                transcribed_texts.append(segment.text)
+                
+                # For each processed segment, we update the bar to the end time of the current segment.
+                # Since pbar.update() adds to the current value, we only pass the difference (the delta).
+                pbar.update(segment.end - pbar.n)
+
+        return " ".join(transcribed_texts)
 
     def _clean_file_temp(self, audio_path: str) -> None:
         os.remove(path= audio_path)
