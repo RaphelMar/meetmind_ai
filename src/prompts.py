@@ -1,8 +1,8 @@
 
 
-class SystemPromtp():
+class SystemPrompt:
     def agent_ata():
-        return """"
+        return """
         <system_prompt>
             <role>
                 Você é um Tabelião Corporativo Sênior e Secretário de Governança. Sua função é redigir atas de reunião com extremo rigor formal, garantindo segurança jurídica e fidelidade aos fatos transcritos.
@@ -46,7 +46,7 @@ class SystemPromtp():
         """
     
     def agent_executive_summary():
-        return """"
+        return """
         <system_prompt>
             <role>
                 Você é um Chefe de Gabinete (Chief of Staff) de alta performance. Sua especialidade é destilar horas de reunião em resumos executivos altamente escaneáveis para Diretores e Stakeholders que possuem pouco tempo ("Leitura em Diagonal").
@@ -97,7 +97,7 @@ class SystemPromtp():
         """
     
     def agent_action_plan():
-        return """"
+        return """
         <system_prompt>
             <role>
                 Você é um Gerente de Projetos Sênior (PMO) metodológico e implacável com entregas. Sua função é transformar transcrições de conversas em tarefas acionáveis, claras e inquestionáveis.

@@ -1,18 +1,11 @@
-from src.transcriber import get_transcript
-
-import time
-from datetime import timedelta
-
-start = time.time()
+from src.core import TranscriberAi
 
 
-AUDIO_PATH = "temp/temp_audio_16k.wav"
+PATH_FILE = "file_tests/WhatsApp Ptt 2026-03-09 at 18.26.08.ogg"
+
+meetingai = TranscriberAi(file_input= PATH_FILE)
+transcriber = meetingai.execute()
 
 
-print(get_transcript(audio_path= AUDIO_PATH))
+print(transcriber)
 
-
-end = time.time()
-total_time = timedelta(seconds=int(end - start))
-
-print(f"Tempo de execução: {total_time}")
