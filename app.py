@@ -1,85 +1,49 @@
-import streamlit as st
 import os
 from src.core import TranscriberAi
+from pathlib import Path
+from dotenv import load_dotenv
+from datetime import datetime
 
-# Configuração da página
-st.set_page_config(page_title="MeetMind AI", page_icon="🎙️", layout="wide")
+load_dotenv()
 
-# ==========================================
-# Task 13: Layout Streamlit (Sidebar)
-# ==========================================
-with st.sidebar:
-    st.title("🎙️ MeetMind AI")
-    st.markdown("---")
-    st.write("Faça o upload do arquivo de áudio ou vídeo da sua reunião para gerar automaticamente:")
-    st.markdown("""
-    - **Sumário Executivo**
-    - **Ata Detalhada**
-    - **Plano de Ação**
-    """)
-    st.markdown("---")
-    st.info("Formatos suportados: .mp3, .ogg, .wav, .m4a, .mp4")
+OUTPUT_PATH = Path(os.getenv("OUTPUT_PATH", ""))
 
-# ==========================================
-# Task 13: Layout Streamlit (Area de Upload)
-# ==========================================
-st.title("Gerador de Atas e Relatórios")
-st.write("Transforme as gravações das suas reuniões em documentos acionáveis.")
+def main():
+    print("="*50)
+    print("🎙️  BEM-VINDO AO MEETMIND AI (Modo Terminal) 🎙️")
+    print("="*50)
+    
+    # Pede ao utilizador o caminho do ficheiro (pode arrastar o ficheiro para o terminal)
+    file_path = input("\nArraste o ficheiro de áudio para aqui e prima ENTER:\n> ").strip()
+    
+    # Remove aspas caso o terminal adicione ao arrastar o ficheiro
+    file_path = file_path.strip("'\"")
 
-# Área de Upload
-uploaded_file = st.file_uploader(
-    "Arraste ou selecione o arquivo da reunião", 
-    type=["mp3", "ogg", "wav", "m4a", "mp4"]
-)
+    if not os.path.exists(file_path):
+        print("Erro: Ficheiro não encontrado! Verifique o caminho.")
+        return
 
-if uploaded_file is not None:
-    # Botão para iniciar o processamento
-    if st.button("Processar Reunião", type="primary"):
+    print("\nA iniciar o processamento da reunião...")
+    
+    try:
+        # Instancia a classe e executa
+        meeting_ai = TranscriberAi(file_input=file_path)
+        resultado_markdown = meeting_ai.execute()
         
-        # Cria a pasta temporária se não existir (ignorada no seu .gitignore)
-        temp_dir = "temp"
-        os.makedirs(temp_dir, exist_ok=True)
+        # Guarda o resultado num ficheiro
+        agora = datetime.now()
+        data_formatada = agora.strftime("%Y-%m-%d-%HT%M")
+        output_name = OUTPUT_PATH / f"{data_formatada}.md"
         
-        # Salva o arquivo em disco temporariamente para o TranscriberAi poder ler
-        temp_file_path = os.path.join(temp_dir, uploaded_file.name)
-        with open(temp_file_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
+        with open(output_name, "w", encoding="utf-8") as f:
+            f.write(resultado_markdown)
             
-        # Feedback visual de carregamento
-        with st.spinner("Transcrevendo áudio e gerando os relatórios com IA... Isso pode levar alguns minutos."):
-            try:
-                # Instancia sua classe do core.py
-                meeting_ai = TranscriberAi(file_input=temp_file_path)
-                
-                # Executa o pipeline (conversão, transcrição e agentes)
-                result_markdown = meeting_ai.execute()
-                
-                st.success("Processamento concluído com sucesso!")
-                
-                # ==========================================
-                # Task 14: Visualização do Markdown final
-                # ==========================================
-                st.markdown("---")
-                st.subheader("Visualização do Relatório")
-                # Container para ficar visualmente separado
-                with st.container(border=True):
-                    st.markdown(result_markdown)
-                
-                # ==========================================
-                # Task 15: Botão de Download (st.download_button)
-                # ==========================================
-                st.markdown("---")
-                st.download_button(
-                    label="📥 Baixar Relatório Completo (.md)",
-                    data=result_markdown,
-                    file_name=f"relatorio_{uploaded_file.name}.md",
-                    mime="text/markdown"
-                )
-                
-            except Exception as e:
-                st.error(f"Ocorreu um erro durante o processamento: {str(e)}")
-                
-            finally:
-                # Limpeza do arquivo temporário original enviado pelo usuário
-                if os.path.exists(temp_file_path):
-                    os.remove(temp_file_path)
+        print("\n" + "="*50)
+        print(f"SUCESSO! Relatório guardado como: {output_name}")
+        print("="*50 + "\n")
+        
+    except Exception as e:
+        print(f"\n❌ Ocorreu um erro durante a execução: {e}")
+
+if __name__ == "__main__":
+    main()

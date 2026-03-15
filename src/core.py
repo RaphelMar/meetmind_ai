@@ -4,11 +4,8 @@ from langchain_ollama import ChatOllama
 from moviepy import AudioFileClip, VideoFileClip
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from tqdm import tqdm
-
-
 from src.prompts import SystemPrompt
-
+from tqdm import tqdm
 
 class TranscriberAi():
     def __init__(self, file_input: str, output_wave: str = "temp/temp_audio_16k.wav"):
@@ -16,40 +13,45 @@ class TranscriberAi():
         self.output_wav = output_wave
 
     def _convert_to_wav(self, file_path: str, output_wave: str) -> None:
-        # Upload the video or audio
-        clip = AudioFileClip(file_path) if file_path.endswith((".mp3", ".ogg", ".wav", "m4a")) else VideoFileClip(file_path).audio
-        clip.write_audiofile(output_wave, fps= 16000, nbytes=2, codec='pcm_s16le', ffmpeg_params=["-ac", "1"])
+        # Extrai o áudio do vídeo ou processa o áudio existente
+        clip = AudioFileClip(file_path) if file_path.endswith((".mp3", ".ogg", ".wav", ".m4a")) else VideoFileClip(file_path).audio
+        # logger=None oculta a saída suja do moviepy na consola
+        clip.write_audiofile(output_wave, fps=16000, nbytes=2, codec='pcm_s16le', ffmpeg_params=["-ac", "1"], logger=None)
 
     def _get_transcript(self, audio_path: str) -> str:
-        # The large-v3-turbo model is best for long and technical meetings.
-        print("teste")
-        model = WhisperModel(model_size_or_path= "large-v3-turbo", device= "cpu", compute_type= "int8")
+        model = WhisperModel(model_size_or_path="large-v3-turbo", device="cpu", compute_type="int8")
 
-        segments, info = model.transcribe(audio_path, beam_size= 8, language= "pt")
-
-        print(segments)
+        # ==========================================
+        # PARÂMETROS ANTI-ALUCINAÇÃO E VAD APLICADOS
+        # ==========================================
+        segments, info = model.transcribe(
+            audio_path,
+            beam_size=6,
+            language="pt",
+            vad_filter=True,
+            vad_parameters=dict(min_silence_duration_ms=500),
+            repetition_penalty=1.15,
+            condition_on_previous_text=False
+        )
 
         transcribed_texts = []
 
-        # Creates a progress bar based on the audio duration in seconds.
-        with tqdm(total=round(info.duration, 2), unit=" seg", desc="Transcrevendo áudio") as pbar:
+        # Barra de progresso visual no terminal
+        with tqdm(total=round(info.duration, 2), unit=" seg", desc="Transcrevendo") as pbar:
             for segment in segments:
                 transcribed_texts.append(segment.text)
-                
-                # For each processed segment, we update the bar to the end time of the current segment.
-                # Since pbar.update() adds to the current value, we only pass the difference (the delta).
+                # Atualiza a barra com o tempo processado
                 pbar.update(segment.end - pbar.n)
 
         return " ".join(transcribed_texts)
 
     def _clean_file_temp(self, audio_path: str) -> None:
-        os.remove(path= audio_path)
+        os.remove(path=audio_path)
 
     def _run_agent(self, transcript: str, role_prompt: str):
-        # Defining the model with a low temperature for greater accuracy.
-        llm = ChatOllama(model= "llama3.2:3b", temperature= 0.1)
+        llm = ChatOllama(model="llama3.2:3b", temperature=0.1, num_ctx=32768, num_gpu= 999)
 
-        # System prompt and execution chain
+        # System prompt e chain de execução
         prompt = ChatPromptTemplate.from_messages([
             ("system", role_prompt),
             ("user", "Texto da Reunião: {text}")
@@ -59,38 +61,36 @@ class TranscriberAi():
         return chain.invoke({"text": transcript})
     
     def execute(self):
-        # Converts media to WAV format.
+        # Converte a média para formato WAV.
+        print("[1/4] A extrair e preparar o áudio com MoviePy...")
         self._convert_to_wav(self.file_input, self.output_wav)
 
-        # Generates the transcript
+        # Gera a transcrição
+        print("[2/4] A iniciar a transcrição (VAD ativado)...")
         transcript = self._get_transcript(self.output_wav)
 
-        # Delete temporary WAV file
+        # Apaga o ficheiro WAV temporário
         self._clean_file_temp(self.output_wav)
 
-        # Agents generating the meeting minutes, executive summary and action plan.
-        executive_summary = self._run_agent(transcript= transcript, role_prompt= SystemPrompt.agent_executive_summary())
-        meeting_minutes = self._run_agent(transcript= transcript, role_prompt= SystemPrompt.agent_ata())
-        action_plan = self._run_agent(transcript= transcript, role_prompt= SystemPrompt.agent_action_plan())
+        # Agentes a gerar as atas, sumário executivo e plano de ação.
+        print("[4/4] Transcrição concluída! A gerar relatório com Llama 3.2:8b")
+        print("Atenção: O Ollama está a ler o texto completo. Isto pode demorar alguns minutos. Por favor, aguarde e não feche o terminal...")
+        executive_summary = self._run_agent(transcript=transcript, role_prompt=SystemPrompt.agent_executive_summary())
+        meeting_minutes = self._run_agent(transcript=transcript, role_prompt=SystemPrompt.agent_ata())
+        action_plan = self._run_agent(transcript=transcript, role_prompt=SystemPrompt.agent_action_plan())
 
         return f"""
-        
-            # Relatório de Reunião MeetMind AI
-            ## Sumário Executivo
-            {executive_summary}
+        # Relatório de Reunião MeetMind AI
+        ## Sumário Executivo
+        {executive_summary}
 
-            ---
+        ---
 
-            ## Ata Detalhada
-            {meeting_minutes}
+        ## Ata Detalhada
+        {meeting_minutes}
 
-            ---
+        ---
 
-            ## Plano de Ação e Tarefas
-            {action_plan}
-            """
-
-        
-
-
-    
+        ## Plano de Ação e Tarefas
+        {action_plan}
+        """
