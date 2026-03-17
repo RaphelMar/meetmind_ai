@@ -38,7 +38,7 @@ def generate_reports(transcript: str):
     llm = ChatOllama(model="gemma3n:e4b", temperature=0.1, num_ctx=32768, num_gpu=999)
 
     # Cleaning the raw text of the transcription performed for other agents.
-    clean_transcript = run_agent(transcript, SystemPrompt.agent_ata(), llm)
+    clean_transcript = run_agent(transcript, SystemPrompt.agent_executive_summary(), llm)
 
     # Preparing the documents: Executive Summary, Minutes, and Action Plan
     #executive_summary = run_agent(clean_transcript, SystemPrompt.agent_executive_summary(), llm)

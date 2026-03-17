@@ -87,15 +87,12 @@ class TranscriberAi():
         Returns a tuple (executive_summary, meeting_minutes, action_plan).
         """
         # Instantiate the LLM once (singleton for this run)
-        llm = ChatOllama(model="llama3.2:3b", temperature=0.1, num_ctx=32768, num_gpu=999)
-
-        # Cleaning the raw text of the transcription performed for other agents.
-        clean_transcript = self._run_agent(transcript, SystemPrompt.agent_sanitizer(), llm)
+        llm = ChatOllama(model="gemma3n:e4b", temperature=0.1, num_ctx=32768, num_gpu=999)
 
         # Preparing the documents: Executive Summary, Minutes, and Action Plan
-        executive_summary = self._run_agent(clean_transcript, SystemPrompt.agent_executive_summary(), llm)
-        meeting_minutes = self._run_agent(clean_transcript, SystemPrompt.agent_ata(), llm)
-        action_plan = self._run_agent(clean_transcript, SystemPrompt.agent_action_plan(), llm)
+        executive_summary = self._run_agent(transcript, SystemPrompt.agent_executive_summary(), llm)
+        meeting_minutes = self._run_agent(transcript, SystemPrompt.agent_ata(), llm)
+        action_plan = self._run_agent(transcript, SystemPrompt.agent_action_plan(), llm)
 
         return executive_summary, meeting_minutes, action_plan
 
@@ -116,8 +113,8 @@ class TranscriberAi():
             self._clean_file_temp(self.output_wav)
 
         # Agents responsible for generating the minutes, executive summary, and action plan.
-        print("\n[3/3] Transcrição concluída! A gerar relatório com Llama 3.2:8b")
-        print("Atenção: O Ollama está a ler o texto completo. Isto pode demorar alguns minutos. Por favor, aguarde e não feche o terminal...")
+        print("\n[3/3] Transcription complete! Generating report with gemma3n:e4b")
+        print("Attention: Gemma is reading the entire text. This may take a few minutes. Please wait and do not close the terminal...")
         executive_summary, meeting_minutes, action_plan = self._generate_reports(transcript)
 
         return f"""
