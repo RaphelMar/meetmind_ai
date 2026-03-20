@@ -38,7 +38,7 @@ class TranscriberAi():
         model = WhisperModel(model_size_or_path="large-v3-turbo", device="cpu", compute_type="int8")
         segments, info = model.transcribe(
             audio_path,
-            beam_size=6,
+            beam_size=8,
             language="pt",
             vad_filter=True,
             vad_parameters=dict(min_silence_duration_ms=500),
